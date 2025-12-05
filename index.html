@@ -1,188 +1,57 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>⭐ TEACHER RONALD — BEAT MIXER ⭐</title>
+<title>DJ Pad — Teacher Ronald</title>
 <style>
-    body {
-        background: #000;
-        font-family: Arial, sans-serif;
-        color: #0ff;
-        text-align: center;
-    }
-    .pad {
-        width: 120px;
-        height: 120px;
-        background: #111;
-        border: 2px solid #0ff;
-        border-radius: 12px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: #0ff;
-        margin: 10px;
-        cursor: pointer;
-        font-size: 20px;
-        transition: 0.2s;
-    }
-    .pad:hover {
-        background: #033;
-    }
-    #controls {
-        margin: 20px;
-    }
+body {
+  background: black;
+  color: lime;
+  font-family: Arial;
+  text-align: center;
+  padding-top: 50px;
+}
+button {
+  width: 120px;
+  height: 120px;
+  font-size: 20px;
+  margin: 15px;
+  border-radius: 20px;
+  background: #222;
+  color: cyan;
+  border: 3px solid cyan;
+}
+button:active {
+  background: cyan;
+  color: black;
+}
+h1 { color: white; font-size: 40px; }
 </style>
 </head>
 <body>
 
-<h1>⭐ TEACHER RONALD — BEAT MIXER ⭐</h1>
+<h1>Teacher Ronald — DJ Pad</h1>
 
-<div id="controls">
-<button id="play">Play / Stop</button>
-<br><br>
-<label>Master Volume:
-<input type="range" id="volume" min="0" max="1" step="0.01" value="1">
-</label>
-</div>
-
-<div id="pads"></div>
+<button onclick="toggleSound(1)">Beat 1</button>
+<button onclick="toggleSound(2)">Beat 2</button>
 
 <script>
-const padContainer = document.getElementById("pads");
-const volumeControl = document.getElementById("volume");
-const playBtn = document.getElementById("play");
-
-let playing = false;
-let beats = [];
-
-// Create 8 buttons even if files missing
-for (let i = 1; i <= 8; i++) {
-    let pad = document.createElement("div");
-    pad.className = "pad";
-    pad.innerText = "Beat " + i;
-
-    let sound = new Audio("beat" + i + ".mp3");
-    sound.volume = 1;
-
-    pad.onclick = () => {
-        sound.currentTime = 0;
-        sound.play().catch(() => alert("No file: beat" + i + ".mp3"));
-    };
-
-    beats.push(sound);
-    padContainer.appendChild(pad);
-}
-
-// Master volume control
-volumeControl.oninput = () => {
-    beats.forEach(sound => sound.volume = volumeControl.value);
+let sounds = {
+  1: new Audio("beat1.mp3"),
+  2: new Audio("beat2.mp3")
 };
 
-// Play/Stop button
-playBtn.onclick = () => {
-    if (!playing) {
-        beats.forEach(b => { b.currentTime = 0; b.play().catch(()=>{}); });
-        playing = true;
-    } else {
-        beats.forEach(b => b.pause());
-        playing = false;
-    }
+function toggleSound(id) {
+  let audio = sounds[id];
+
+  if (audio.paused) {
+    audio.loop = true;
+    audio.play();
+  } else {
+    audio.pause();
+    audio.currentTime = 0; // resets to start
+  }
 }
-  
-const pads = document.querySelectorAll('.pad');
-const sounds = [
-  new Audio('beat1.mp3'),
-  new Audio('beat2.mp3'),
-  new Audio('beat3.mp3'),
-  new Audio('beat4.mp3'),
-  new Audio('beat5.mp3'),
-  new Audio('beat6.mp3'),
-  new Audio('beat7.mp3'),
-  new Audio('beat8.mp3'),
-];
-
-let pressTimer = null;
-let lastTapTime = 0;
-
-pads.forEach((pad, index) => {
-  const sound = sounds[index];
-  sound.loop = false;
-
-  // --- TAP ACTIONS ---
-  pad.addEventListener('click', () => {
-    const now = Date.now();
-
-    if (now - lastTapTime < 250) {
-      // DOUBLE TAP → RESTART
-      sound.currentTime = 0;
-      sound.play();
-      pad.style.background = '#00FFFF';
-    } else {
-      // SINGLE TAP → ONE SHOT
-      sound.loop = false;
-      sound.currentTime = 0;
-      sound.play();
-      pad.style.background = '#0088FF';
-    }
-
-    lastTapTime = now;
-  });
-
-  // --- PRESS & HOLD → LOOP MODE ---
-  pad.addEventListener('mousedown', () => {
-    pressTimer = setTimeout(() => {
-      sound.loop = true;
-      sound.play();
-      pad.style.background = '#FF00FF';
-    }, 400);
-  });
-
-  pad.addEventListener('mouseup', () => clearTimeout(pressTimer));
-  pad.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-
-  // --- SWIPE DOWN TO STOP ---
-  let startY = null;
-
-  pad.addEventListener('touchstart', (e) => {
-    startY = e.touches[0].clientY;
-    pressTimer = setTimeout(() => {
-      sound.loop = true;
-      sound.play();
-      pad.style.background = '#FF00FF';
-      navigator.vibrate?.(50);
-    }, 400);
-  });
-
-  pad.addEventListener('touchmove', (e) => {
-    let currentY = e.touches[0].clientY;
-    if (startY !== null && currentY - startY > 60) {
-      sound.pause();
-      sound.currentTime = 0;
-      pad.style.background = '#222';
-      navigator.vibrate?.(60);
-    }
-  });
-
-  pad.addEventListener('touchend', () => clearTimeout(pressTimer));
-});
-
-// --- KEYBOARD SUPPORT ---
-document.addEventListener('keydown', (e) => {
-  const key = parseInt(e.key);
-
-  if (!isNaN(key) && key >= 1 && key <= 8) {
-    pads[key - 1].click();
-  }
-
-  // SPACEBAR → STOP ALL
-  if (e.key === " ") {
-    sounds.forEach((s, i) => {
-      s.pause();
-      s.currentTime = 0;
-      pads[i].style.background = '#222';
-    });
-  }
-});  
 </script>
 
 </body>
