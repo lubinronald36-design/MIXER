@@ -1,259 +1,94 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>DJ Beat Mixer — Teacher Ronald</title>
+<meta charset="UTF-8">
+<title>⭐ TEACHER RONALD — BEAT MIXER ⭐</title>
 <style>
-  :root{--bg:#05050a;--neon:#00aaff;--panel:#0c0f12;--muted:#9fdcff}
-  body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(#020204,#071017);color:var(--neon);display:flex;flex-direction:column;align-items:center;padding:20px}
-  h1{font-size:34px;margin:6px 0 18px;text-align:center;text-shadow:0 0 12px var(--neon)}
-  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:100%;max-width:960px}
-  .pad{background:linear-gradient(180deg,#0d1113,#071217);border:2px solid rgba(0,170,255,0.14);padding:12px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
-  .pad h3{margin:0;font-size:14px;color:#fff}
-  .bigbtn{background:var(--neon);color:#001;border:none;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer;width:100%}
-  .smallbtn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:6px 8px;border-radius:6px;cursor:pointer}
-  .controls{display:flex;flex-direction:column;gap:8px;width:100%}
-  .row{display:flex;gap:8px;align-items:center;width:100%}
-  input[type="range"]{width:100%}
-  label{font-size:13px;color:var(--muted)}
-  .panel{width:100%;max-width:980px;margin-top:18px;background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04)}
-  .transport{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
-  .small{font-size:13px;color:var(--muted)}
-  @media(max-width:760px){ .grid{grid-template-columns:repeat(2,1fr)} }
-  @media(max-width:420px){ .grid{grid-template-columns:1fr} .bigbtn{width:100%} }
+    body {
+        background: #000;
+        font-family: Arial, sans-serif;
+        color: #0ff;
+        text-align: center;
+    }
+    .pad {
+        width: 120px;
+        height: 120px;
+        background: #111;
+        border: 2px solid #0ff;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #0ff;
+        margin: 10px;
+        cursor: pointer;
+        font-size: 20px;
+        transition: 0.2s;
+    }
+    .pad:hover {
+        background: #033;
+    }
+    #controls {
+        margin: 20px;
+    }
 </style>
 </head>
 <body>
-  <h1>★ TEACHER RONALD — BEAT MIXER ★</h1>
 
-  <div class="panel">
-    <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:8px">
-      <div class="transport">
-        <button id="playTransport" class="bigbtn">Play</button>
-        <div style="min-width:160px">
-          <label class="small">BPM <span id="bpmVal">120</span></label>
-          <input id="bpm" type="range" min="60" max="180" value="120">
-        </div>
-        <div style="min-width:160px">
-          <label class="small">Master Volume <span id="mv">100%</span></label>
-          <input id="master" type="range" min="0" max="1" step="0.01" value="1">
-        </div>
-        <button id="metBtn" class="smallbtn">Metronome</button>
-      </div>
-    </div>
+<h1>⭐ TEACHER RONALD — BEAT MIXER ⭐</h1>
 
-    <div class="small" style="text-align:center;margin-bottom:8px">
-      Pads: 1–8 to play one-shot. Shift+1..Shift+8 toggles loop for each pad. Space toggles transport. ↑ / ↓ master.
-    </div>
+<div id="controls">
+<button id="play">Play / Stop</button>
+<br><br>
+<label>Master Volume:
+<input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+</label>
+</div>
 
-    <div class="grid" id="padsGrid">
-      <!-- pads injected here -->
-    </div>
-  </div>
+<div id="pads"></div>
 
 <script>
-/* ------------------------------
-  Configuration: file names (replace if you have different names)
-  Place these mp3 files in same folder as this HTML:
-  beat1.mp3 .. beat8.mp3
---------------------------------*/
-const PAD_FILES = [
-  'beat1.mp3','beat2.mp3','beat3.mp3','beat4.mp3',
-  'beat5.mp3','beat6.mp3','beat7.mp3','beat8.mp3'
-];
+const padContainer = document.getElementById("pads");
+const volumeControl = document.getElementById("volume");
+const playBtn = document.getElementById("play");
 
-/* Create pad UI and audio objects */
-const padsGrid = document.getElementById('padsGrid');
-const pads = []; // {id, audio, loopOn, loopBeats, volSlider, loopCheckbox, playBtn, selectDiv}
-for(let i=0;i<8;i++){
-  const idx = i+1;
-  const container = document.createElement('div'); container.className='pad';
-  container.innerHTML = `
-    <h3>Pad ${idx}</h3>
-    <div class="controls">
-      <button class="bigbtn playBtn">Play (key ${idx})</button>
-      <div class="row">
-        <label class="small">Volume</label>
-        <input type="range" class="vol" min="0" max="1" step="0.01" value="1">
-      </div>
-      <div class="row" style="justify-content:space-between">
-        <label><input type="checkbox" class="loopChk"> Loop</label>
-        <select class="loopDiv">
-          <option value="1">1 beat</option>
-          <option value="2">2 beats</option>
-          <option value="4" selected>4 beats</option>
-        </select>
-      </div>
-    </div>
-  `;
-  padsGrid.appendChild(container);
+let playing = false;
+let beats = [];
 
-  const audio = new Audio(PAD_FILES[i]);
-  audio.preload = 'auto';
-  const playBtn = container.querySelector('.playBtn');
-  const volSlider = container.querySelector('.vol');
-  const loopChk = container.querySelector('.loopChk');
-  const loopDiv = container.querySelector('.loopDiv');
+// Create 8 buttons even if files missing
+for (let i = 1; i <= 8; i++) {
+    let pad = document.createElement("div");
+    pad.className = "pad";
+    pad.innerText = "Beat " + i;
 
-  // store pad object
-  pads.push({id:'pad'+idx, audio, playBtn, volSlider, loopChk, loopDiv, loopOn:false, loopInterval:null});
+    let sound = new Audio("beat" + i + ".mp3");
+    sound.volume = 1;
 
-  // wire UI
-  playBtn.addEventListener('click', ()=> { playOneShot(i); });
-  volSlider.addEventListener('input', ()=> audio.volume = Number(volSlider.value));
-  loopChk.addEventListener('change', ()=> {
-    pads[i].loopOn = loopChk.checked;
-    if(pads[i].loopOn) startPadLoop(i); else stopPadLoop(i);
-    // update button text to show mode
-    updatePadLabel(i);
-  });
-  loopDiv.addEventListener('change', ()=> {
-    if(pads[i].loopOn){ stopPadLoop(i); startPadLoop(i); }
-  });
+    pad.onclick = () => {
+        sound.currentTime = 0;
+        sound.play().catch(() => alert("No file: beat" + i + ".mp3"));
+    };
+
+    beats.push(sound);
+    padContainer.appendChild(pad);
 }
 
-/* Transport + BPM + Master */
-const bpmEl = document.getElementById('bpm'), bpmVal = document.getElementById('bpmVal');
-const playTransport = document.getElementById('playTransport');
-const master = document.getElementById('master'), masterVal = document.getElementById('mv');
-const metBtn = document.getElementById('metBtn');
+// Master volume control
+volumeControl.oninput = () => {
+    beats.forEach(sound => sound.volume = volumeControl.value);
+};
 
-let transportPlaying = false;
-let metronomePlaying = false;
-let sequencerTimer = null;
-let metTimer = null;
-
-bpmEl.addEventListener('input', ()=> { bpmVal.textContent = bpmEl.value; /* if sequencer running, update loops */ if(transportPlaying) restartAllLoops(); });
-master.addEventListener('input', ()=> { masterVal.textContent = Math.round(master.value*100)+'%'; pads.forEach(p=>p.audio.volume = Number(p.volSlider.value) * Number(master.value)); });
-playTransport.addEventListener('click', ()=> toggleTransport());
-metBtn.addEventListener('click', ()=> toggleMetronome());
-
-/* Play one-shot */
-function playOneShot(i){
-  const p = pads[i];
-  if(!p) return;
-  // restart audio from start (fast)
-  try{ p.audio.currentTime = 0; }catch(e){}
-  p.audio.volume = Number(p.volSlider.value) * Number(master.value);
-  p.audio.play().catch(()=>{ /* may be blocked until user clicks on page */ });
-}
-
-/* Pad loop scheduling using BPM: schedule repeated play via setInterval */
-function startPadLoop(i){
-  const p = pads[i];
-  if(p.loopInterval) clearInterval(p.loopInterval);
-  const beats = Number(p.loopDiv.value);
-  const bpm = Number(bpmEl.value);
-  const msPerBeat = 60000 / bpm;
-  const intervalMs = msPerBeat * beats;
-  // play immediately on start for instant feel then schedule
-  playOneShot(i);
-  p.loopInterval = setInterval(()=> playOneShot(i), Math.max(40, intervalMs));
-  p.loopOn = true;
-  updatePadLabel(i);
-}
-function stopPadLoop(i){
-  const p = pads[i];
-  if(p.loopInterval){ clearInterval(p.loopInterval); p.loopInterval = null; }
-  p.loopOn = false;
-  updatePadLabel(i);
-}
-
-/* Update pad button label to show loop state */
-function updatePadLabel(i){
-  const p = pads[i];
-  if(!p) return;
-  if(p.loopOn) p.playBtn.textContent = Looping • ${p.loopDiv.value} beat;
-  else p.playBtn.textContent = Play (key ${i+1});
-}
-
-/* Sequencer transport toggles: when starting, enable loops for pads that have loop checked */
-function toggleTransport(){
-  transportPlaying = !transportPlaying;
-  playTransport.textContent = transportPlaying ? 'Stop' : 'Play';
-  if(transportPlaying){
-    // start loops for all pads with loopOn true
-    pads.forEach((p, i) => {
-      if(p.loopChk.checked){ p.loopOn = true; startPadLoop(i); }
-    });
-  } else {
-    // stop all scheduled loops
-    pads.forEach((p,i) => stopPadLoop(i));
-  }
-}
-
-/* If BPM changed while playing, restart active loops */
-function restartAllLoops(){
-  pads.forEach((p,i)=>{
-    if(p.loopOn){ stopPadLoop(i); startPadLoop(i); }
-  });
-}
-
-/* Metronome: small click using oscillator (WebAudio) or fallback to short beep */
-let audioCtx = null;
-function toggleMetronome(){
-  metronomePlaying = !metronomePlaying;
-  metBtn.textContent = metronomePlaying ? 'Metronome On' : 'Metronome';
-  if(metronomePlaying){
-    // use WebAudio oscillator click
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const bpm = Number(bpmEl.value);
-    const msPerBeat = 60000 / bpm;
-    metTimer = setInterval(()=> playClick(), msPerBeat);
-  } else {
-    clearInterval(metTimer);
-    metTimer = null;
-  }
-}
-function playClick(){
-  if(!audioCtx) return;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = 'square';
-  o.frequency.value = 1000;
-  g.gain.value = 0.02;
-  o.connect(g); g.connect(audioCtx.destination);
-  o.start();
-  setTimeout(()=>{ o.stop(); }, 60);
-}
-
-/* Keyboard controls:
-   1-8 => one-shot pads
-   Shift+1..8 => toggle loop (checkbox) for that pad
-   Space => toggle transport
-   ArrowUp/Down => master volume
-*/
-document.addEventListener('keydown', (e)=>{
-  if(e.repeat) return;
-  const k = e.key;
-  if(k >= '1' && k <= '8'){
-    const idx = Number(k) - 1;
-    if(e.shiftKey){
-      // toggle loop checkbox
-      const p = pads[idx];
-      if(p){ p.loopChk.checked = !p.loopChk.checked; p.loopChk.dispatchEvent(new Event('change')); }
+// Play/Stop button
+playBtn.onclick = () => {
+    if (!playing) {
+        beats.forEach(b => { b.currentTime = 0; b.play().catch(()=>{}); });
+        playing = true;
     } else {
-      playOneShot(idx);
+        beats.forEach(b => b.pause());
+        playing = false;
     }
-    e.preventDefault();
-    return;
-  }
-  if(k === ' '){
-    toggleTransport();
-    e.preventDefault();
-    return;
-  }
-  if(k === 'ArrowUp'){
-    master.value = Math.min(1, Number(master.value) + 0.05);
-    master.dispatchEvent(new Event('input'));
-    e.preventDefault();
-    return;
-  }
-  if(k === 'ArrowDown'){
-    master.value = Math.max(0, Number(master.value) - 0.05);
-    master.dispatchEvent(new Event('input'));
-    e.preventDefault();
-    return;
-  }
-});
+};
+</script>
+
+</body>
+</html>
